@@ -40,28 +40,28 @@ func (e *edge) String() string {
 }
 
 func (g *graph) String() string {
-	out := `digraph G {
-		rankdir=LR;
-layout = dot
+	out := `
+digraph G {
+	rankdir=LR;
+	layout = dot
 `
-
 	for _, t := range g.topics {
-		out += fmt.Sprintf(`"%s" [ shape = box,color=lightgrey,style=filled ];
-`, t)
+		out += fmt.Sprintf(`
+	"%s" [ shape = box,color=lightgrey,style=filled ];`, t)
 	}
 
 	for k := range g.nodes {
 		for _, v := range g.getEdges(k) {
-			out += fmt.Sprintf(`"%s" -> "%s" [ label = "%s" ];
-`, k, v.node, v.label)
+			out += fmt.Sprintf(`
+	"%s" -> "%s" [ label = "%s" ];`, k, v.node, v.label)
 		}
 	}
-	out += "}"
+	out += "\n}"
 	return out
 }
 
 func main() {
-	// Open the file
+	// csv format: topic,operation,app,lang,version,transport,environment
 	csvfile, err := os.Open(os.Args[1])
 	if err != nil {
 		log.Fatalln("Couldn't open the csv file", err)
@@ -69,6 +69,7 @@ func main() {
 
 	g := newGraph()
 
+	// add different shapes for the topics
 	r := csv.NewReader(csvfile)
 	for {
 		record, err := r.Read()
@@ -81,6 +82,7 @@ func main() {
 		g.addTopic(record[0])
 	}
 
+	// re-read file and add nodes
 	csvfile.Seek(0, 0)
 	for {
 		record, err := r.Read()
@@ -90,12 +92,15 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		// all topics are consumed by mm, remove noise
 		if record[2] == "mirrormaker" {
 			continue
 		}
 		// if record[2] == "shopify" {
 		// 	continue
 		// }
+
+		// use arrows for how the data flows
 		if record[1] == "CONSUMER" {
 			g.addEdge(record[0], record[2], record[1])
 		} else {
